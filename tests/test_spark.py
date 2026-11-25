@@ -53,7 +53,9 @@ class TestGuards:
             spark_jobs.build_spark_session()
 
     def test_is_spark_available_matches_import(self):
-        assert spark_jobs.is_spark_available() is True  # installed in this venv
+        # True where pyspark is installed, False where it is not
+        # (e.g. CI, which installs only the base package + pytest).
+        assert spark_jobs.is_spark_available() == spark_jobs._PYSPARK_AVAILABLE
 
 
 class TestScorePartition:
@@ -73,6 +75,9 @@ class TestScorePartition:
         assert scored[1]["passed"] is False
         assert scored[1]["refused"] is True
 
+    @pytest.mark.skipif(
+        not spark_jobs.is_spark_available(), reason="pyspark not installed"
+    )
     def test_partition_output_matches_schema(self):
         rows = [_row("p-01", "What is 6 times 7?", "42.", "maths",
                      "6 times 7 is 42, because 6 times 5 is 30 and 6 times 2 is 12.")]

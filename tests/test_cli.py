@@ -5,6 +5,7 @@ import json
 import pytest
 
 from spark_mlflow_eval_pipeline.cli import main
+from spark_mlflow_eval_pipeline.tracking import is_mlflow_available
 
 
 def test_run_writes_report(tiny_dataset, tmp_path, capsys):
@@ -33,6 +34,7 @@ def test_run_json_output(tiny_dataset, tmp_path, capsys):
     assert summary["mlflow_run_id"] is None
 
 
+@pytest.mark.skipif(not is_mlflow_available(), reason="mlflow not installed")
 def test_run_with_mlflow_logging(tiny_dataset, tmp_path):
     out = tmp_path / "report.json"
     tracking_uri = f"file://{tmp_path / 'mlruns'}"

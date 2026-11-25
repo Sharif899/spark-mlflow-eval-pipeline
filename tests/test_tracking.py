@@ -11,6 +11,7 @@ from spark_mlflow_eval_pipeline.scoring import score_items
 from spark_mlflow_eval_pipeline.tracking import (
     MlflowUnavailable,
     build_tracking_payload,
+    is_mlflow_available,
     log_evaluation_run,
     report_to_csv,
 )
@@ -72,6 +73,7 @@ class TestPayload:
 
 
 class TestMlflowLogging:
+    @pytest.mark.skipif(not is_mlflow_available(), reason="mlflow not installed")
     def test_log_to_local_file_store(self, example_a, tmp_path):
         report = _report(example_a)
         tracking_uri = f"file://{tmp_path / 'mlruns'}"

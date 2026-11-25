@@ -61,26 +61,41 @@ def require_spark() -> None:
         )
 
 
-SCORED_SCHEMA = StructType(
-    [
-        StructField("item_id", StringType(), False),
-        StructField("model", StringType(), True),
-        StructField("category", StringType(), False),
-        StructField("slice", StringType(), False),
-        StructField("score_factual_accuracy", IntegerType(), False),
-        StructField("score_reasoning_quality", IntegerType(), False),
-        StructField("score_instruction_adherence", IntegerType(), False),
-        StructField("score_helpfulness", IntegerType(), False),
-        StructField("score_safety", IntegerType(), False),
-        StructField("mean_score", FloatType(), False),
-        StructField("factual_accuracy", FloatType(), False),
-        StructField("supported", IntegerType(), False),
-        StructField("contradicted", IntegerType(), False),
-        StructField("unverifiable", IntegerType(), False),
-        StructField("passed", BooleanType(), False),
-        StructField("refused", BooleanType(), False),
-    ]
-)
+def _build_scored_schema() -> "StructType":
+    """The output schema for scored items (pyspark only)."""
+    return StructType(
+        [
+            StructField("item_id", StringType(), False),
+            StructField("model", StringType(), True),
+            StructField("category", StringType(), False),
+            StructField("slice", StringType(), False),
+            StructField("score_factual_accuracy", IntegerType(), False),
+            StructField("score_reasoning_quality", IntegerType(), False),
+            StructField("score_instruction_adherence", IntegerType(), False),
+            StructField("score_helpfulness", IntegerType(), False),
+            StructField("score_safety", IntegerType(), False),
+            StructField("mean_score", FloatType(), False),
+            StructField("factual_accuracy", FloatType(), False),
+            StructField("supported", IntegerType(), False),
+            StructField("contradicted", IntegerType(), False),
+            StructField("unverifiable", IntegerType(), False),
+            StructField("passed", BooleanType(), False),
+            StructField("refused", BooleanType(), False),
+        ]
+    )
+
+
+# Built lazily from the pyspark types: constructing this at import
+# time raised NameError when pyspark was absent, which broke pytest
+# collection (and CI) in environments without the [spark] extra.
+SCORED_SCHEMA = _build_scored_schema() if _PYSPARK_AVAILABLE else None
+
+
+def get_scored_schema() -> "StructType":
+    """Return SCORED_SCHEMA, raising SparkUnavailable without pyspark."""
+    require_spark()
+    assert SCORED_SCHEMA is not None
+    return SCORED_SCHEMA
 
 
 def build_spark_session(
@@ -163,7 +178,7 @@ def score_with_spark(
         if column not in raw.columns:
             raw = raw.withColumn(column, F.lit(default))
     rdd = raw.rdd.mapPartitions(_score_partition)
-    return spark.createDataFrame(rdd, schema=SCORED_SCHEMA)
+    return spark.createDataFrame(rdd, schema=get_scored_schema())
 
 
 def aggregate_in_spark(scored_df: "DataFrame") -> "DataFrame":
