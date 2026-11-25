@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spark-mlflow-eval-pipeline"
+version = "0.1.0"
+description = "Spark + MLflow evaluation pipeline for LLM/model outputs: score at scale, track runs, compare models."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.2",
+]
+
+[project.optional-dependencies]
+spark = ["pyspark>=3.5"]
+mlflow = ["mlflow>=2.14,<3"]
+test = ["pytest>=8"]
+
+[project.scripts]
+evpipe = "spark_mlflow_eval_pipeline.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
